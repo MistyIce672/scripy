@@ -34,31 +34,35 @@ export default function AppRunnerScreen() {
   const [activeRoom, setActiveRoom] = useState<Room | null>(null);
 
   useEffect(() => {
-    loadApp();
-  }, [appId]);
+    if (!appId || !user) return;
 
-  async function loadApp() {
-    if (!appId) return;
+    let cancelled = false;
 
-    const { data, error } = await supabase
-      .from("apps")
-      .select("*")
-      .eq("id", appId)
-      .single();
+    (async () => {
+      const { data, error } = await supabase
+        .from("apps")
+        .select("*")
+        .eq("id", appId)
+        .single();
 
-    if (error || !data) {
-      Alert.alert("Error", "App not found");
-      return;
-    }
+      if (cancelled) return;
 
-    setApp(data);
-    setLoading(false);
+      if (error || !data) {
+        Alert.alert("Error", "App not found");
+        return;
+      }
 
-    const rooms = await getMyRooms(appId);
-    if (rooms.length > 0) {
-      setActiveRoom(rooms[0]);
-    }
-  }
+      setApp(data);
+      setLoading(false);
+
+      const rooms = await getMyRooms(appId);
+      if (!cancelled && rooms.length > 0) {
+        setActiveRoom(rooms[0]);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [appId, user]);
 
   async function handleCreateRoom() {
     if (!appId || !app) return;

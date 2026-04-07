@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Pressable,
@@ -20,6 +21,7 @@ export default function HomeScreen() {
   const { myApps, installedApps, fetchMyApps, fetchInstalledApps, deleteApp, uninstallApp } =
     useAppsStore();
   const [refreshing, setRefreshing] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   const allApps: App[] = [
     ...myApps,
@@ -30,8 +32,9 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchMyApps();
-      fetchInstalledApps();
+      Promise.all([fetchMyApps(), fetchInstalledApps()]).then(() => {
+        setInitialLoad(false);
+      });
     }, [fetchMyApps, fetchInstalledApps])
   );
 
@@ -99,12 +102,18 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>No apps yet</Text>
-            <Text style={styles.emptyText}>
-              Create your first mini app or browse the marketplace
-            </Text>
-          </View>
+          initialLoad ? (
+            <View style={styles.empty}>
+              <ActivityIndicator size="large" color="#1A73E8" />
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>No apps yet</Text>
+              <Text style={styles.emptyText}>
+                Create your first mini app or browse the marketplace
+              </Text>
+            </View>
+          )
         }
       />
 
